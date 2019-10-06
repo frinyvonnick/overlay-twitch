@@ -1,0 +1,19 @@
+{
+  "name": "overlay-twitch",
+  "version": "1.0.0",
+  "description": "A simple overlay for Twitch",
+  "main": "src/index.js",
+  "repository": "git@github.com:frinyvonnick/overlay-twitch.git",
+  "author": "FRIN Yvonnick <frin.yvonnick@gmail.com>",
+  "license": "Apache-2.0",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "browser-sync start --server 'src' --files \"src/*\""
+  },
+  "dependencies": {
+    "serve-handler": "^6.1.2"
+  },
+  "devDependencies": {
+    "browser-sync": "^2.26.7"
+  }
+}
