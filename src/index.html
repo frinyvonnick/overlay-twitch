@@ -1,14 +1,17 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
 
     <title>Twitch overlay</title>
-    <meta name="description" content="A simple overlay for Twitch">
-    <meta name="author" content="Yvonnick FRIN">
+    <meta name="description" content="A simple overlay for Twitch" />
+    <meta name="author" content="Yvonnick FRIN" />
 
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700&display=swap" rel="stylesheet">
-    <link href="./main.css" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700&display=swap"
+      rel="stylesheet"
+    />
+    <link href="./main.css" rel="stylesheet" />
   </head>
 
   <body>
@@ -18,12 +21,57 @@
       <span>Website: https://yvonnickfrin.dev</span>
     </header>
     <div class="camera">
-      <div class="camera-wrapper">
-
-      </div>
+      <div class="camera-wrapper"></div>
+      <div id="follower-alerts" class="follower-alerts"></div>
     </div>
     <footer>
-      <span>https://github.com/charlyx/pair-roulette 👩‍💻🌍👨‍💻 A platform for Open-Source collaboration with random people all over the world</span>
+      <span
+        >https://github.com/charlyx/pair-roulette 👩‍💻🌍👨‍💻 A platform for
+        Open-Source collaboration with random people all over the world</span
+      >
     </footer>
+    <template id="follower-alert">
+      <div class="follower-alert entrance">
+        <h3>follower</h3>
+        <div class="follower-name"></div>
+      </div>
+    </template>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      var socket = io();
+      socket.on("follower", function(msg) {
+        const { data } = JSON.parse(msg);
+        const newFollower = data[0];
+        var template = document.querySelector("#follower-alert");
+        var clone = document.importNode(template.content, true);
+        var followerName = clone.querySelector(".follower-name");
+        followerName.textContent = newFollower.from_name;
+
+        const followerAlerts = document.querySelector("#follower-alerts");
+        followerAlerts.appendChild(clone);
+
+        var audio = new Audio("/app_alert_tone_038.mp3");
+        audio.play();
+
+        setTimeout(() => {
+          followerAlerts.children[0].classList.remove("entrance");
+          followerAlerts.children[0].classList.add("exit");
+        }, 3000);
+
+        setTimeout(() => {
+          followerAlerts.children[0].remove();
+        }, 4000);
+      });
+    </script>
+    <script id="__bs_script__">
+      //<![CDATA[
+      document.write(
+        "<script async src='http://HOST:3001/browser-sync/browser-sync-client.js?v=2.26.7'><\/script>".replace(
+          "HOST",
+          location.hostname
+        )
+      );
+      //]]>
+    </script>
   </body>
 </html>

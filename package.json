@@ -11,9 +11,13 @@
     "dev": "browser-sync start --server 'src' --files \"src/*\""
   },
   "dependencies": {
-    "serve-handler": "^6.1.2"
+    "node-fetch": "^2.6.0",
+    "querystring": "^0.2.0",
+    "serve-handler": "^6.1.2",
+    "socket.io": "^2.3.0"
   },
   "devDependencies": {
-    "browser-sync": "^2.26.7"
+    "browser-sync": "^2.26.7",
+    "dotenv": "^8.1.0"
   }
 }
