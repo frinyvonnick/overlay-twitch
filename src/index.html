@@ -42,6 +42,9 @@
     </template>
     <script src="/socket.io/socket.io.js"></script>
     <script>
+      var audio = new Audio("/app_alert_tone_038.mp3");
+      audio.volume = 0.25
+
       const newAlert = document.querySelector('#new-alert')
       setInterval(() => {
         newAlert.classList.remove("exit");
@@ -63,8 +66,6 @@
 
         const followerAlerts = document.querySelector("#follower-alerts");
         followerAlerts.appendChild(clone);
-
-        var audio = new Audio("/app_alert_tone_038.mp3");
         audio.play();
 
         setTimeout(() => {
