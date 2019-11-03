@@ -1,6 +1,6 @@
 :root {
   --primary-background: #9ce19e;
-  --primary-border: #66bb69;
+  --primary-border: #444;
 }
 
 * {
@@ -15,16 +15,39 @@ body {
   position: relative;
 }
 
+.trapeze {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  
+  height: 0;
+  width: 250px;
+  border-bottom: 30px solid var(--primary-border);
+  border-left: 25px solid transparent;
+  border-right: 25px solid transparent;
+}
+
+.streamer-name {
+  position: absolute;
+  bottom: 5px;
+  width: 100%;
+  left: 0;
+  color: white;
+}
+
 header,
 footer {
   position: absolute;
   width: 100%;
   height: 55px;
-  background-color: var(--primary-background);
+  color: white;
+  background-image: url(/dark-honeycomb.png);
   font-size: 24px;
   display: flex;
   align-items: center;
   padding: 0 40px;
+  box-shadow: 0px 0px 20px 2px rgba(0,0,0,0.75);
 }
 
 header {
@@ -49,12 +72,16 @@ footer {
   width: 400px;
   height: 200px;
   border: 5px solid var(--primary-border);
+  position: relative;
+  box-shadow: 0px 0px 20px 2px rgba(0,0,0,0.75);
+  text-align: center;
 }
 
 .follower-alert {
   display: flex;
   align-items: center;
-  background-color: var(--primary-background);
+  color: white;
+  background-image: url(/dark-honeycomb.png);
   margin-top: 20px;
   height: 50px;
 }
@@ -67,6 +94,48 @@ footer {
 .exit {
   -webkit-animation: slit-out-vertical 0.5s ease-in both;
   animation: slit-out-vertical 0.5s ease-in both;
+}
+
+header .neon,
+footer .neon {
+	width: 5px;
+	height: 40px;
+  top: 5px;
+}
+
+.neon {
+  position: absolute;
+	background-color: #61EF61;
+	box-shadow: 0 0 10px 2px #61EF61;
+}
+.left-neon {
+  left: 0;
+  right: auto.
+}
+
+.right-neon {
+  right: 0;
+  left: auto;
+}
+
+.camera-wrapper .neon {
+  height: 5px;
+  width: 200px;
+}
+
+.new-alert .neon {
+  width: 5px;
+  height: 100px;
+}
+
+.new-alert .neon {
+  top: 30px;
+  left: -2.5px;
+}
+
+.bottom-neon {
+  bottom: -5px;
+  left: 95px;
 }
 
 .follower-alert h3 {
@@ -104,7 +173,8 @@ footer {
   position: absolute;
   bottom: 90px;
   right: 40px;
-  background-color: var(--primary-background);
+  color: white;
+  background-image: url(/dark-honeycomb.png);
   padding: 20px;
   border-left: 50px solid var(--primary-border);
   border-bottom: 5px solid var(--primary-border);
