@@ -13,26 +13,67 @@ const emitToPool = (channel, message) => {
   });
 };
 
-fetch("https://api.twitch.tv/helix/webhooks/hub", {
-  method: "POST",
-  headers: {
-    "Client-ID": process.env.TWITCH_CLIENT_ID,
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    "hub.callback": `${process.argv[2]}/twitch`,
-    "hub.mode": "subscribe",
-    "hub.lease_seconds": "864000",
-    "hub.topic":
-      `https://api.twitch.tv/helix/users/follows?first=1&to_id=${process.argv[3]}`
+async function getFollowersCount() {
+  const id = await getUserId(process.argv[3])
+  return fetch(`https://api.twitch.tv/helix/users/follows?to_id=${id}`, {
+    method: "GET",
+    headers: {
+      "Client-ID": process.env.TWITCH_CLIENT_ID,
+      "Accept": "application/vnd.twitchtv.v5+json"
+    },
   })
-})
-  .then(res => res.status)
-  .then(console.log)
-  .catch(e => console.error(e));
+    .then(res => res.json())
+    .then(({ total }) => total)
+}
+
+function getUserId(login) {
+  return fetch(`https://api.twitch.tv/kraken/users?login=${login}`, {
+    method: "GET",
+    headers: {
+      "Client-ID": process.env.TWITCH_CLIENT_ID,
+      "Accept": "application/vnd.twitchtv.v5+json"
+    },
+  })
+    .then(res => res.json())
+    .then(({ users }) => users)
+    .then(([{ _id }]) => _id)
+}
+
+async function subscribeToFollowers() {
+  const id = await getUserId(process.argv[3])
+  return fetch("https://api.twitch.tv/helix/webhooks/hub", {
+    method: "POST",
+    headers: {
+      "Client-ID": process.env.TWITCH_CLIENT_ID,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      "hub.callback": `${process.argv[2]}/twitch`,
+      "hub.mode": "subscribe",
+      "hub.lease_seconds": "864000",
+      "hub.topic":
+        `https://api.twitch.tv/helix/users/follows?first=1&to_id=${id}`
+    })
+  })
+    .then(res => res.status)
+    .then(console.log)
+    .catch(e => console.error(e));
+}
+
+subscribeToFollowers()
 
 const server = http.createServer((request, response) => {
-  if (request.url.includes("/twitch")) {
+  if (request.url.includes("/followers")) {
+    const followersCount = getFollowersCount()
+      .then(total => {
+        response.write(JSON.stringify({ data: total }));
+        response.end()
+      })
+
+    response.writeHead(200);
+    return;
+  }
+  else if (request.url.includes("/twitch")) {
     const params = qs.decode(request.url.split("?")[1]);
 
     if (params["hub.challenge"]) {
@@ -45,7 +86,6 @@ const server = http.createServer((request, response) => {
         body += chunk;
       });
       request.on("end", () => {
-        console.log('WEBHOOK DATA', JSON.parse(body))
         console.log("NEW FOLLOWER", JSON.parse(body).data[0].from_name);
         emitToPool("follower", body);
         response.end("ok");

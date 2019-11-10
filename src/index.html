@@ -25,7 +25,7 @@
     <div class="camera">
       <div class="camera-wrapper">
         <div class="trapeze"></div>
-        <span class="streamer-name">Yvonnick Frin</span>
+        <span class="camera-sub"><strong>Goal</strong> <span id="current-followers"></span>/50 followers</span>
         <div class="bottom-neon neon"></div>
       </div>
       <div id="follower-alerts" class="follower-alerts"></div>
@@ -51,6 +51,14 @@
     </template>
     <script src="/socket.io/socket.io.js"></script>
     <script>
+      function updateFollowers() {
+        fetch('/followers')
+          .then(res => res.json())
+          .then(({ data }) => {
+            document.querySelector("#current-followers").innerText = data
+          })
+      }
+      updateFollowers()
       var audio = new Audio("/app_alert_tone_038.mp3");
       audio.volume = 0.25
 
@@ -85,6 +93,8 @@
         setTimeout(() => {
           followerAlerts.children[0].remove();
         }, 4000);
+
+        updateFollowers()
       });
     </script>
     <script id="__bs_script__">

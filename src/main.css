@@ -22,18 +22,19 @@ body {
   transform: translateX(-50%);
   
   height: 0;
-  width: 250px;
+  width: 300px;
   border-bottom: 30px solid var(--primary-border);
   border-left: 25px solid transparent;
   border-right: 25px solid transparent;
 }
 
-.streamer-name {
+.camera-sub {
   position: absolute;
-  bottom: 5px;
+  bottom: 2.5px;
   width: 100%;
   left: 0;
   color: white;
+  font-size: 20px;
 }
 
 header,
