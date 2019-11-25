@@ -2,8 +2,23 @@ const handler = require("serve-handler");
 const http = require("http");
 const fetch = require("node-fetch");
 const qs = require("querystring");
+const ngrok = require("ngrok");
 
 require("dotenv").config();
+
+const keypress = require('keypress');
+
+process.stdin.setRawMode(true);
+process.stdin.resume();
+
+keypress(process.stdin);
+
+process.stdin.on('keypress', (str, key) => {
+  if (key.ctrl && key.name === 'c') {
+    unsubscribeToFollowers()
+      .catch(e => console.error(e))
+  }
+});
 
 const connectionPool = [];
 
@@ -13,8 +28,14 @@ const emitToPool = (channel, message) => {
   });
 };
 
+const ngrokUrl = ngrok.connect({
+  addr: 3000,
+  region: 'eu',
+  onStatusChange: status => { if (status === 'closed') { console.error('ERROR: Ngrok closed') } },
+})
+
 async function getFollowersCount() {
-  const id = await getUserId(process.argv[3])
+  const id = await getUserId(process.argv[2])
   return fetch(`https://api.twitch.tv/helix/users/follows?to_id=${id}`, {
     method: "GET",
     headers: {
@@ -39,8 +60,9 @@ function getUserId(login) {
     .then(([{ _id }]) => _id)
 }
 
-async function subscribeToFollowers() {
-  const id = await getUserId(process.argv[3])
+async function unsubscribeToFollowers() {
+  const url = await Promise.resolve(ngrokUrl)
+  const id = await getUserId(process.argv[2])
   return fetch("https://api.twitch.tv/helix/webhooks/hub", {
     method: "POST",
     headers: {
@@ -48,7 +70,28 @@ async function subscribeToFollowers() {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      "hub.callback": `${process.argv[2]}/twitch`,
+      "hub.callback": `${url}/twitch`,
+      "hub.mode": "unsubscribe",
+      "hub.lease_seconds": "864000",
+      "hub.topic":
+        `https://api.twitch.tv/helix/users/follows?first=1&to_id=${id}`
+    })
+  })
+    .then(res => res.status)
+    .then(console.log)
+    .catch(e => console.error(e));
+}
+async function subscribeToFollowers() {
+  const url = await Promise.resolve(ngrokUrl)
+  const id = await getUserId(process.argv[2])
+  return fetch("https://api.twitch.tv/helix/webhooks/hub", {
+    method: "POST",
+    headers: {
+      "Client-ID": process.env.TWITCH_CLIENT_ID,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      "hub.callback": `${url}/twitch`,
       "hub.mode": "subscribe",
       "hub.lease_seconds": "864000",
       "hub.topic":
@@ -61,6 +104,7 @@ async function subscribeToFollowers() {
 }
 
 subscribeToFollowers()
+  .catch(e => console.error(e))
 
 const server = http.createServer((request, response) => {
   if (request.url.includes("/followers")) {
@@ -80,6 +124,9 @@ const server = http.createServer((request, response) => {
       response.writeHead(200);
       response.write(params["hub.challenge"]);
       response.end();
+      if (params["hub.mode"] === 'unsubscribe') {
+        process.exit();
+      }
     } else {
       let body = "";
       request.on("data", chunk => {
@@ -113,4 +160,5 @@ io.on("connection", function(socket) {
 
 server.listen(3000, () => {
   console.log("Running at http://localhost:3000");
+  console.log('pid is ' + process.pid);
 });
