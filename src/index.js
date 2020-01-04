@@ -3,22 +3,10 @@ const http = require("http");
 const fetch = require("node-fetch");
 const qs = require("querystring");
 const ngrok = require("ngrok");
+const fs = require("fs");
+const path = require("path");
 
 require("dotenv").config();
-
-const keypress = require('keypress');
-
-process.stdin.setRawMode(true);
-process.stdin.resume();
-
-keypress(process.stdin);
-
-process.stdin.on('keypress', (str, key) => {
-  if (key.ctrl && key.name === 'c') {
-    unsubscribeToFollowers()
-      .catch(e => console.error(e))
-  }
-});
 
 const connectionPool = [];
 
@@ -28,119 +16,7 @@ const emitToPool = (channel, message) => {
   });
 };
 
-const ngrokUrl = ngrok.connect({
-  addr: 3000,
-  region: 'eu',
-  onStatusChange: status => { if (status === 'closed') { console.error('ERROR: Ngrok closed') } },
-})
-
-async function getFollowersCount() {
-  const id = await getUserId(process.argv[2])
-  return fetch(`https://api.twitch.tv/helix/users/follows?to_id=${id}`, {
-    method: "GET",
-    headers: {
-      "Client-ID": process.env.TWITCH_CLIENT_ID,
-      "Accept": "application/vnd.twitchtv.v5+json"
-    },
-  })
-    .then(res => res.json())
-    .then(({ total }) => total)
-}
-
-function getUserId(login) {
-  return fetch(`https://api.twitch.tv/kraken/users?login=${login}`, {
-    method: "GET",
-    headers: {
-      "Client-ID": process.env.TWITCH_CLIENT_ID,
-      "Accept": "application/vnd.twitchtv.v5+json"
-    },
-  })
-    .then(res => res.json())
-    .then(({ users }) => users)
-    .then(([{ _id }]) => _id)
-}
-
-async function unsubscribeToFollowers() {
-  const url = await Promise.resolve(ngrokUrl)
-  const id = await getUserId(process.argv[2])
-  return fetch("https://api.twitch.tv/helix/webhooks/hub", {
-    method: "POST",
-    headers: {
-      "Client-ID": process.env.TWITCH_CLIENT_ID,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      "hub.callback": `${url}/twitch`,
-      "hub.mode": "unsubscribe",
-      "hub.lease_seconds": "864000",
-      "hub.topic":
-        `https://api.twitch.tv/helix/users/follows?first=1&to_id=${id}`
-    })
-  })
-    .then(res => res.status)
-    .then(console.log)
-    .catch(e => console.error(e));
-}
-async function subscribeToFollowers() {
-  const url = await Promise.resolve(ngrokUrl)
-  const id = await getUserId(process.argv[2])
-  return fetch("https://api.twitch.tv/helix/webhooks/hub", {
-    method: "POST",
-    headers: {
-      "Client-ID": process.env.TWITCH_CLIENT_ID,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      "hub.callback": `${url}/twitch`,
-      "hub.mode": "subscribe",
-      "hub.lease_seconds": "864000",
-      "hub.topic":
-        `https://api.twitch.tv/helix/users/follows?first=1&to_id=${id}`
-    })
-  })
-    .then(res => res.status)
-    .then(console.log)
-    .catch(e => console.error(e));
-}
-
-subscribeToFollowers()
-  .catch(e => console.error(e))
-
 const server = http.createServer((request, response) => {
-  if (request.url.includes("/followers")) {
-    const followersCount = getFollowersCount()
-      .then(total => {
-        response.write(JSON.stringify({ data: total }));
-        response.end()
-      })
-
-    response.writeHead(200);
-    return;
-  }
-  else if (request.url.includes("/twitch")) {
-    const params = qs.decode(request.url.split("?")[1]);
-
-    if (params["hub.challenge"]) {
-      response.writeHead(200);
-      response.write(params["hub.challenge"]);
-      response.end();
-      if (params["hub.mode"] === 'unsubscribe') {
-        process.exit();
-      }
-    } else {
-      let body = "";
-      request.on("data", chunk => {
-        body += chunk;
-      });
-      request.on("end", () => {
-        console.log("NEW FOLLOWER", JSON.parse(body).data[0].from_name);
-        emitToPool("follower", body);
-        response.end("ok");
-      });
-    }
-    return;
-  }
-
   return handler(request, response, {
     public: "src"
   });
@@ -150,6 +26,7 @@ var io = require("socket.io")(server);
 
 io.on("connection", function(socket) {
   connectionPool.push(socket);
+  emitFollowersCount();
   socket.on("disconnect", function() {
     const connectionIndex = connectionPool.findIndex(
       connection => connection === socket
@@ -161,4 +38,45 @@ io.on("connection", function(socket) {
 server.listen(3000, () => {
   console.log("Running at http://localhost:3000");
   console.log('pid is ' + process.pid);
+  initializeWatchers();
 });
+
+const DATA_DIR = '../data'
+
+function emitFollowersCount() {
+  const buffer = fs.readFileSync(path.join(__dirname, DATA_DIR, 'total_follower_count.txt'))
+  const total = buffer.toString('utf8')
+  emitToPool("followers_count", total)
+}
+
+function initializeWatchers() {
+  let lastFollower = getFileContent('most_recent_follower.txt')
+  let lastSubscriber = getFileContent('most_recent_subscriber.txt')
+  let lastResubscriber = getFileContent('most_recent_resubscriber.txt')
+
+  watchFileContent('most_recent_follower.txt', (content) => {
+    if (content === lastFollower) return
+    emitToPool('follower', content)
+    emitFollowersCount()
+  })
+  watchFileContent('most_recent_subscriber.txt', (content) => {
+    if (content === lastSubscriber) return
+    emitToPool('subscriber', content)
+  })
+  watchFileContent('most_recent_resubscriber.txt', (content) => {
+    if (content === lastResubscriber) return
+    emitToPool('subscriber', content)
+  })
+}
+
+function watchFileContent(filename, cb) {
+  fs.watchFile(path.join(__dirname, DATA_DIR, filename), () => {
+    cb(getFileContent(filename))
+  })
+}
+
+function getFileContent(filename) {
+  const buffer = fs.readFileSync(path.join(__dirname, DATA_DIR, filename))
+  const content = buffer.toString('utf8')
+  return content
+}

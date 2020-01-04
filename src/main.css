@@ -78,7 +78,7 @@ footer {
   text-align: center;
 }
 
-.follower-alert {
+.alert {
   display: flex;
   align-items: center;
   color: white;
@@ -139,7 +139,7 @@ footer .neon {
   left: 95px;
 }
 
-.follower-alert h3 {
+.alert h3 {
   background-color: var(--primary-border);
   height: 100%;
   margin: 0;
@@ -151,7 +151,7 @@ footer .neon {
   text-transform: uppercase;
 }
 
-.follower-alert h3:after {
+.alert h3:after {
   content: " ";
   width: 0;
   height: 0;
@@ -162,7 +162,7 @@ footer .neon {
   border-right: 50px solid transparent;
 }
 
-.follower-name {
+.alert-name {
   z-index: 1;
   flex: 2;
   text-align: center;

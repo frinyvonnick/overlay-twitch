@@ -25,10 +25,11 @@
     <div class="camera">
       <div class="camera-wrapper">
         <div class="trapeze"></div>
-        <span class="camera-sub"><strong>Goal</strong> <span id="current-followers"></span>/50 followers</span>
+        <span class="camera-sub"><strong>Goal</strong> <span id="current-followers"></span>/100 followers</span>
         <div class="bottom-neon neon"></div>
       </div>
       <div id="follower-alerts" class="follower-alerts"></div>
+      <div id="subscriber-alerts" class="subscriber-alerts"></div>
     </div>
     <div id="new-alert" class="new-alert">
       <div class="left-neon neon"></div>
@@ -38,27 +39,24 @@
     <footer>
       <div class="left-neon neon"></div>
       <span
-        >https://github.com/charlyx/pair-roulette 👩‍💻🌍👨‍💻 A platform for
-        Open-Source collaboration with random people all over the world</span
+        >https://github.com/frinyvonnick/issue-reporter - A lib that generates issue reports for unexcepted errors</span
       >
       <div class="right-neon neon"></div>
     </footer>
     <template id="follower-alert">
-      <div class="follower-alert entrance">
+      <div class="alert entrance">
         <h3>follower</h3>
-        <div class="follower-name"></div>
+        <div class="alert-name"></div>
+      </div>
+    </template>
+    <template id="subscriber-alert">
+      <div class="alert entrance">
+        <h3>subscriber</h3>
+        <div class="alert-name"></div>
       </div>
     </template>
     <script src="/socket.io/socket.io.js"></script>
     <script>
-      function updateFollowers() {
-        fetch('/followers')
-          .then(res => res.json())
-          .then(({ data }) => {
-            document.querySelector("#current-followers").innerText = data
-          })
-      }
-      updateFollowers()
       var audio = new Audio("/app_alert_tone_038.mp3");
       audio.volume = 0.25
 
@@ -73,13 +71,14 @@
       }, 1000 * 60 * 5) 
 
       var socket = io();
-      socket.on("follower", function(msg) {
-        const { data } = JSON.parse(msg);
-        const newFollower = data[0];
+      socket.on("followers_count", function(msg) {
+        document.querySelector("#current-followers").innerText = msg
+      })
+      socket.on("follower", function(newFollowerName) {
         var template = document.querySelector("#follower-alert");
         var clone = document.importNode(template.content, true);
-        var followerName = clone.querySelector(".follower-name");
-        followerName.textContent = newFollower.from_name;
+        var followerName = clone.querySelector(".alert-name");
+        followerName.textContent = newFollowerName;
 
         const followerAlerts = document.querySelector("#follower-alerts");
         followerAlerts.appendChild(clone);
@@ -93,19 +92,26 @@
         setTimeout(() => {
           followerAlerts.children[0].remove();
         }, 4000);
-
-        updateFollowers()
       });
-    </script>
-    <script id="__bs_script__">
-      //<![CDATA[
-      document.write(
-        "<script async src='http://HOST:3001/browser-sync/browser-sync-client.js?v=2.26.7'><\/script>".replace(
-          "HOST",
-          location.hostname
-        )
-      );
-      //]]>
+      socket.on("subscriber", function(newSubscriberName) {
+        var template = document.querySelector("#subscriber-alert");
+        var clone = document.importNode(template.content, true);
+        var subscriberName = clone.querySelector(".alert-name");
+        subscriberName.textContent = newSubscriberName;
+
+        const subscriberAlerts = document.querySelector("#subscriber-alerts");
+        subscriberAlerts.appendChild(clone);
+        audio.play();
+
+        setTimeout(() => {
+          subscriberAlerts.children[0].classList.remove("entrance");
+          subscriberAlerts.children[0].classList.add("exit");
+        }, 3000);
+
+        setTimeout(() => {
+          subscriberAlerts.children[0].remove();
+        }, 4000);
+      });
     </script>
   </body>
 </html>

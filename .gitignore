@@ -61,3 +61,7 @@ typings/
 .next
 
 .env.development
+
+data
+
+.DS_Store
