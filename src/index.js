@@ -27,6 +27,7 @@ var io = require("socket.io")(server);
 io.on("connection", function(socket) {
   connectionPool.push(socket);
   emitFollowersCount();
+  emitSubscribersCount();
   socket.on("disconnect", function() {
     const connectionIndex = connectionPool.findIndex(
       connection => connection === socket
@@ -44,34 +45,36 @@ server.listen(3000, () => {
 const DATA_DIR = '../data'
 
 function emitFollowersCount() {
-  const buffer = fs.readFileSync(path.join(__dirname, DATA_DIR, 'total_follower_count.txt'))
-  const total = buffer.toString('utf8')
-  emitToPool("followers_count", total)
+  const total = getFileContent('total_follower_count.txt')
+  emitToPool("follower_count", total)
+}
+
+function emitSubscribersCount() {
+  const total = getFileContent('total_subscriber_count.txt')
+  emitToPool("subscriber_count", total)
 }
 
 function initializeWatchers() {
-  let lastFollower = getFileContent('most_recent_follower.txt')
-  let lastSubscriber = getFileContent('most_recent_subscriber.txt')
-  let lastResubscriber = getFileContent('most_recent_resubscriber.txt')
-
   watchFileContent('most_recent_follower.txt', (content) => {
-    if (content === lastFollower) return
     emitToPool('follower', content)
     emitFollowersCount()
   })
   watchFileContent('most_recent_subscriber.txt', (content) => {
-    if (content === lastSubscriber) return
     emitToPool('subscriber', content)
+    emitSubscribersCount()
   })
   watchFileContent('most_recent_resubscriber.txt', (content) => {
-    if (content === lastResubscriber) return
     emitToPool('subscriber', content)
+    emitSubscribersCount()
   })
 }
 
 function watchFileContent(filename, cb) {
+  let previousContent = getFileContent(filename)
   fs.watchFile(path.join(__dirname, DATA_DIR, filename), () => {
-    cb(getFileContent(filename))
+    const content = getFileContent(filename)
+    if (content === previousContent) return
+    cb(content)
   })
 }
 

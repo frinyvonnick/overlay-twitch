@@ -25,7 +25,7 @@
     <div class="camera">
       <div class="camera-wrapper">
         <div class="trapeze"></div>
-        <span class="camera-sub"><strong>Goal</strong> <span id="current-followers"></span>/100 followers</span>
+        <span class="camera-sub"><strong>Goal</strong> <span id="current-goal"></span>/10 abonnés</span>
         <div class="bottom-neon neon"></div>
       </div>
       <div id="follower-alerts" class="follower-alerts"></div>
@@ -71,8 +71,8 @@
       }, 1000 * 60 * 5) 
 
       var socket = io();
-      socket.on("followers_count", function(msg) {
-        document.querySelector("#current-followers").innerText = msg
+      socket.on("subscriber_count", function(msg) {
+        document.querySelector("#current-goal").innerText = msg
       })
       socket.on("follower", function(newFollowerName) {
         var template = document.querySelector("#follower-alert");
