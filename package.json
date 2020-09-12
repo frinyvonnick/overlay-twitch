@@ -13,7 +13,7 @@
   "dependencies": {
     "keypress": "^0.2.1",
     "ngrok": "^3.2.5",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "querystring": "^0.2.0",
     "serve-handler": "^6.1.2",
     "socket.io": "^2.3.0"
