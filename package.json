@@ -16,7 +16,7 @@
     "node-fetch": "^2.6.0",
     "querystring": "^0.2.0",
     "serve-handler": "^6.1.2",
-    "socket.io": "^2.3.0"
+    "socket.io": "^2.4.0"
   },
   "devDependencies": {
     "browser-sync": "^2.26.7",
